@@ -1,3 +1,4 @@
+#include"ray.h"
 #include<iostream>
 #include<fstream>
 #include<Windows.h>
@@ -6,6 +7,12 @@ using namespace std;
 #define WIDTH 1280
 #define HEIGHT 800
 #define FILENAME "D:\\DATA\\0.bmp"
+
+vec3 color(const ray& r) {
+	vec3 unit_direction = unit_vector(r.direction());
+	double t = 0.5 * (unit_direction.y() + 1);
+	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
+}
 
 int main() {
 	BITMAPFILEHEADER bf;
@@ -37,11 +44,21 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
+	vec3 lower_left_corner(-2, -1, -1);
+	vec3 horizontal(4, 0, 0);
+	vec3 vertical(0, 2, 0);
+	vec3 origin(0, 0, 0);
+
 	for (int i = 0; i < HEIGHT; i++) {
 		for (int j = 0; j < WIDTH; j++) {
-			bm[i][j].rgbtRed = (255 * i / HEIGHT);
-			bm[i][j].rgbtGreen = (255 * j / WIDTH);
-			bm[i][j].rgbtBlue = 51;
+			double u = double(j) / WIDTH;
+			double v = double(i) / HEIGHT;
+			ray r(origin, lower_left_corner + u * horizontal + v * vertical);
+			vec3 col = color(r);
+		//	bm[i][j] = *(RGBTRIPLE*)col.e;
+			bm[i][j].rgbtRed = col.r();
+			bm[i][j].rgbtGreen = col.g();
+			bm[i][j].rgbtBlue = col.b();
 		}
 	}
 
