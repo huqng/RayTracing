@@ -6,7 +6,7 @@ public:
 	double radius;
 
 	sphere() {}
-	sphere(vec3 cen, double r) :center(cen), radius(r) {}
+	sphere(vec3 cen, double r, material* mat) :center(cen), radius(r) { this->mat = mat; }
 	virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec)const;
 };
 
@@ -19,6 +19,7 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec)const
 	if (d > 0) {
 		double t = (-b - sqrt(d)) / (2 * a);
 		if (t < t_max && t > t_min) {
+			rec.mat_ptr = mat;
 			rec.t = t;		
 			rec.p = r.point_at_parameter(t);
 			rec.normal = (rec.p - center) / radius;
@@ -26,6 +27,7 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec)const
 		}
 		t = -b / a - t;
 		if (t < t_max && t > t_min) {
+			rec.mat_ptr = mat;
 			rec.t = t;
 			rec.p = r.point_at_parameter(t);
 			rec.normal = (rec.p - center) / radius;

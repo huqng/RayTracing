@@ -4,6 +4,7 @@
 // ͼƬ�ĳߴ�
 #define WIDTH 1280			
 #define HEIGHT 800
+#define AA 10
 
 class camera {
 public:
