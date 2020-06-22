@@ -3,14 +3,33 @@
 #include<fstream>
 #include<Windows.h>
 using namespace std;
-
-#define WIDTH 1280
+// 图片的尺寸
+#define WIDTH 1280					
 #define HEIGHT 800
+// 图片文件位置
 #define FILENAME "D:\\DATA\\0.bmp"
 
+double hit_sphere(const vec3& center, double radius, const ray& r) {
+	vec3 oc = r.origin() - center;
+	double a = dot(r.direction(), r.direction());
+	double b = 2 * dot(oc, r.direction());
+	double c = dot(oc, oc) - radius * radius;
+	double d = b * b - 4 * a * c;
+	if (d < 0)
+		return -1;
+	else {
+		return (-b - sqrt(d)) / (2 * a);
+	}
+}
+
 vec3 color(const ray& r) {
+	double t = hit_sphere(vec3(0, 0, -1), 0.5, r);
+	if (t > 0) {
+		vec3 N = unit_vector(r.point_at_parameter(t) - vec3(0, 0, -1));
+		return 255.99 / 2 * vec3(N.x() + 1, N.y() + 1, N.z() + 1);
+	}
 	vec3 unit_direction = unit_vector(r.direction());
-	double t = 0.5 * (unit_direction.y() + 1);
+	t = 0.5 * (unit_direction.y() + 1);
 	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
 }
 
@@ -44,8 +63,10 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
-	vec3 lower_left_corner(-2, -1, -1);
-	vec3 horizontal(4, 0, 0);
+	// 模拟一个三维空间，摄像机在原点，看向-z。
+	// 屏幕在z=-1处，以+y为上，屏幕的高度为2（-1 to +1），宽度根据图片长宽比决定
+	vec3 lower_left_corner(-((double)WIDTH / HEIGHT), -1, -1);	
+	vec3 horizontal(((double)WIDTH / HEIGHT) * 2, 0, 0);
 	vec3 vertical(0, 2, 0);
 	vec3 origin(0, 0, 0);
 

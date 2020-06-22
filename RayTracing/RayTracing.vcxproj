@@ -141,6 +141,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="hitable.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="vec3.h" />
   </ItemGroup>
