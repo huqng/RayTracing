@@ -1,4 +1,6 @@
-#include"ray.h"
+//#include"ray.h"
+#include"sphere.h"
+#include"hitablelist.h"
 #include<iostream>
 #include<fstream>
 #include<Windows.h>
@@ -9,28 +11,16 @@ using namespace std;
 // Í¼Æ¬ÎÄ¼þÎ»ÖÃ
 #define FILENAME "D:\\DATA\\0.bmp"
 
-double hit_sphere(const vec3& center, double radius, const ray& r) {
-	vec3 oc = r.origin() - center;
-	double a = dot(r.direction(), r.direction());
-	double b = 2 * dot(oc, r.direction());
-	double c = dot(oc, oc) - radius * radius;
-	double d = b * b - 4 * a * c;
-	if (d < 0)
-		return -1;
+vec3 color(const ray& r, hitable* world) {
+	hit_record rec;
+	if (world->hit(r, 0, MAXINT, rec)) {
+		return 255.99 / 2 * vec3(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
+	}
 	else {
-		return (-b - sqrt(d)) / (2 * a);
+		vec3 unit_direction = unit_vector(r.direction());
+		double t = 0.5 * (unit_direction.y() + 1);
+		return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
 	}
-}
-
-vec3 color(const ray& r) {
-	double t = hit_sphere(vec3(0, 0, -1), 0.5, r);
-	if (t > 0) {
-		vec3 N = unit_vector(r.point_at_parameter(t) - vec3(0, 0, -1));
-		return 255.99 / 2 * vec3(N.x() + 1, N.y() + 1, N.z() + 1);
-	}
-	vec3 unit_direction = unit_vector(r.direction());
-	t = 0.5 * (unit_direction.y() + 1);
-	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
 }
 
 int main() {
@@ -70,12 +60,17 @@ int main() {
 	vec3 vertical(0, 2, 0);
 	vec3 origin(0, 0, 0);
 
+	hitable* list[2];
+	list[0] = new sphere(vec3(0, 0, -1), 0.5);
+	list[1] = new sphere(vec3(0, -100.5, -1), 100);
+	hitable* world = new hitable_list(list, 2);
+
 	for (int i = 0; i < HEIGHT; i++) {
 		for (int j = 0; j < WIDTH; j++) {
 			double u = double(j) / WIDTH;
 			double v = double(i) / HEIGHT;
 			ray r(origin, lower_left_corner + u * horizontal + v * vertical);
-			vec3 col = color(r);
+			vec3 col = color(r, world);
 		//	bm[i][j] = *(RGBTRIPLE*)col.e;
 			bm[i][j].rgbtRed = col.r();
 			bm[i][j].rgbtGreen = col.g();
