@@ -1,15 +1,19 @@
 //#include"ray.h"
+#include"camera.h"
 #include"sphere.h"
 #include"hitablelist.h"
 #include<iostream>
 #include<fstream>
+#include<random>
 #include<Windows.h>
 using namespace std;
-// 图片的尺寸
-#define WIDTH 1280					
-#define HEIGHT 800
+
 // 图片文件位置
 #define FILENAME "D:\\DATA\\0.bmp"
+
+double rand1() {
+	return (double)rand() / (RAND_MAX + 1);
+}
 
 vec3 color(const ray& r, hitable* world) {
 	hit_record rec;
@@ -53,25 +57,26 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
-	// 模拟一个三维空间，摄像机在原点，看向-z。
-	// 屏幕在z=-1处，以+y为上，屏幕的高度为2（-1 to +1），宽度根据图片长宽比决定
-	vec3 lower_left_corner(-((double)WIDTH / HEIGHT), -1, -1);	
-	vec3 horizontal(((double)WIDTH / HEIGHT) * 2, 0, 0);
-	vec3 vertical(0, 2, 0);
-	vec3 origin(0, 0, 0);
+
 
 	hitable* list[2];
 	list[0] = new sphere(vec3(0, 0, -1), 0.5);
 	list[1] = new sphere(vec3(0, -100.5, -1), 100);
 	hitable* world = new hitable_list(list, 2);
+	int ns = 10;
+	camera cam;
 
 	for (int i = 0; i < HEIGHT; i++) {
 		for (int j = 0; j < WIDTH; j++) {
-			double u = double(j) / WIDTH;
-			double v = double(i) / HEIGHT;
-			ray r(origin, lower_left_corner + u * horizontal + v * vertical);
-			vec3 col = color(r, world);
-		//	bm[i][j] = *(RGBTRIPLE*)col.e;
+			vec3 col(0, 0, 0);
+			for (int s = 0; s < ns; s++) {
+				double u = double(j + rand1()) / WIDTH;
+				double v = double(i + rand1()) / HEIGHT;
+				ray r = cam.get_ray(u, v);
+				vec3 p = r.point_at_parameter(2);
+				col += color(r, world);
+			}
+			col /= ns;
 			bm[i][j].rgbtRed = col.r();
 			bm[i][j].rgbtGreen = col.g();
 			bm[i][j].rgbtBlue = col.b();
