@@ -93,7 +93,7 @@ int main() {
 	list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.3));
 	list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.5));
 	hitable* world = new hitable_list(list, 4);
-	camera cam;
+	camera cam(vec3(-2, 2, 1), vec3(0, 0, -1), vec3(0, 1, 0), 60, (double)WIDTH / HEIGHT);
 	
 	write_into_bitmap(bm, cam, world);
 
