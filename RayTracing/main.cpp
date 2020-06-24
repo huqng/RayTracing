@@ -32,8 +32,9 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	}
 }
 
-int write_into_bitmap(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
+int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
 	for (int i = 0; i < HEIGHT; i++) {
+		cout << i << " ";
 		for (int j = 0; j < WIDTH; j++) {
 			vec3 col(0, 0, 0);
 			for (int s = 0; s < AA; s++) {
@@ -46,7 +47,7 @@ int write_into_bitmap(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
 			col /= AA;
 
 			col /= 255.99;
-			//	col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 			col *= 255.99;
 
 			bm[i][j].rgbtRed = col.r();
@@ -55,6 +56,38 @@ int write_into_bitmap(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
 		}
 	}
 	return 0;
+}
+
+hitable* random_scene() {
+	int n = 150;
+	hitable** list = new hitable * [n + 1];
+	list[0] = new sphere(vec3(0, 0, -1000), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+	int cnt = 1;
+	for (int a = -6; a < 6; a++) {
+		for (int b = -6; b < 6; b++) {
+			double choose_mat = rand1();
+			vec3 center(a + 0.9 * rand1(), b + 0.9 * rand1(), 0.2);
+			if (choose_mat < 0.8) {
+				list[cnt++] = new sphere(center, 0.2, new lambertian(vec3(rand1(), rand1(), rand1())));
+			}
+			else if (choose_mat < 0.95) {
+				list[cnt++] = new sphere(
+					center, 0.2,
+					new metal(
+						vec3(0.5 * (1 + rand1()), 0.5 * (1 + rand1()), 0.5 * (1 + rand1())), 0.5 * rand1()
+					)
+				);
+			}
+			else {
+				list[cnt++] = new sphere(center, 0.2, new dielectric(1.5));
+			}
+		}
+	}
+	list[cnt++] = new sphere(vec3(0, 0, 1), 1, new dielectric(1.5));
+	list[cnt++] = new sphere(vec3(-4, 0, 1), 1, new lambertian(vec3(0.4, 0.2, 0.1)));
+	list[cnt++] = new sphere(vec3(4, 0, 1), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
+	return new hitable_list(list, cnt);
+
 }
 
 int main() {
@@ -87,15 +120,21 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
-	hitable* list[4];
-	list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
-	list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0)));
-	list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.3));
-	list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.5));
-	hitable* world = new hitable_list(list, 4);
-	camera cam(vec3(-2, 2, 1), vec3(0, 0, -1), vec3(0, 1, 0), 60, (double)WIDTH / HEIGHT);
+	hitable* list[2];
+	list[0] = new sphere(vec3(5, 0, 0), 5, new lambertian(vec3(0.1, 0.2, 0.5)));
+	list[1] = new sphere(vec3(-5, 0, 0), 5, new metal(vec3(0.6, 0.6, 0.6), 0.2));
+	hitable* world = new hitable_list(list, 2);
+
+	vec3 lookfrom(0, 10, 0);
+	vec3 lookat(0, 0, 0);
+	vec3 vup = vec3(0, 0, 1);
+	double vfov = 40;
+	double aspect = (double)WIDTH / HEIGHT;
+	double dist_to_focus = (lookfrom - lookat).length();
+	double aperture = 0;
+	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus);;
 	
-	write_into_bitmap(bm, cam, world);
+	render(bm, cam, world);
 
 	of.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
 	of.write((const char*)&bi, sizeof(BITMAPINFOHEADER));

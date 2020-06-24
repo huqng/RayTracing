@@ -13,6 +13,14 @@ vec3 random_in_unit_sphere() {
 	return p;
 }
 
+vec3 random_in_unit_disk() {
+	vec3 p;
+	do {
+		p = 2 * vec3(rand1(), rand1(), 0) - vec3(1, 1, 0);
+	} while (dot(p, p) >= 1);
+	return p;
+}
+
 vec3 reflect(const vec3& v, const vec3& n) {
 	return v - 2 * dot(v, n) * n;
 }
