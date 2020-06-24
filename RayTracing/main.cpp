@@ -32,6 +32,31 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	}
 }
 
+int write_into_bitmap(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
+	for (int i = 0; i < HEIGHT; i++) {
+		for (int j = 0; j < WIDTH; j++) {
+			vec3 col(0, 0, 0);
+			for (int s = 0; s < AA; s++) {
+				double u = double(j + rand1()) / WIDTH;
+				double v = double(i + rand1()) / HEIGHT;
+				ray r = cam.get_ray(u, v);
+				vec3 p = r.point_at_parameter(2);
+				col += color(r, world, 0);
+			}
+			col /= AA;
+
+			col /= 255.99;
+			//	col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+			col *= 255.99;
+
+			bm[i][j].rgbtRed = col.r();
+			bm[i][j].rgbtGreen = col.g();
+			bm[i][j].rgbtBlue = col.b();
+		}
+	}
+	return 0;
+}
+
 int main() {
 	BITMAPFILEHEADER bf;
 	BITMAPINFOHEADER bi;
@@ -65,32 +90,12 @@ int main() {
 	hitable* list[4];
 	list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.8, 0.3, 0.3)));
 	list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0)));
-	list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2)));
-	list[3] = new sphere(vec3(-1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8)));
+	list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.3));
+	list[3] = new sphere(vec3(-1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8), 1));
 	hitable* world = new hitable_list(list, 4);
 	camera cam;
-
-	for (int i = 0; i < HEIGHT; i++) {
-		for (int j = 0; j < WIDTH; j++) {
-			vec3 col(0, 0, 0);
-			for (int s = 0; s < AA; s++) {
-				double u = double(j + rand1()) / WIDTH;
-				double v = double(i + rand1()) / HEIGHT;
-				ray r = cam.get_ray(u, v);
-				vec3 p = r.point_at_parameter(2);
-				col += color(r, world, 0);
-			}
-			col /= AA;
-
-			col /= 255.99;
-		//	col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-			col *= 255.99;
-
-			bm[i][j].rgbtRed = col.r();
-			bm[i][j].rgbtGreen = col.g();
-			bm[i][j].rgbtBlue = col.b();
-		}
-	}
+	
+	write_into_bitmap(bm, cam, world);
 
 	of.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
 	of.write((const char*)&bi, sizeof(BITMAPINFOHEADER));
