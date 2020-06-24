@@ -58,3 +58,32 @@ public:
 		return (dot(scattered.direction(), rec.normal) > 0);
 	}
 };
+
+class dielectric :public material {
+public:
+	double ref_idx;
+	dielectric(double ri) :ref_idx(ri) {}
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const {
+		vec3 outward_normal;
+		vec3 reflected = reflect(r_in.direction(), rec.normal);
+		double ni_over_nt;
+		attenuation = vec3(1, 1, 1);
+		vec3 refracted;
+		if (dot(r_in.direction(), rec.normal) > 0) {
+			outward_normal = -rec.normal;
+			ni_over_nt = ref_idx;
+		}
+		else {
+			outward_normal = rec.normal;
+			ni_over_nt = 1 / ref_idx;
+		}
+		if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
+			scattered = ray(rec.p, refracted);
+		}
+		else {
+			scattered = ray(rec.p, reflected);
+			return false;
+		}
+		return true;
+	}
+};
