@@ -7,6 +7,8 @@ class material;
 class hitable;
 class lambertian;
 class metal;
+class texture;
+class constant_texture;
 
 struct hit_record {
 	double t;
@@ -22,6 +24,22 @@ public:
 	virtual bool hit(const ray& r, double t_min, double t_max, hit_record& rec)const = 0;
 };
 
+class texture {
+public:
+	virtual vec3 value(double u, double v, const vec3& p)const = 0;
+};
+
+class constant_texture :public texture {
+public:
+	vec3 color;
+
+	constant_texture() {}
+	constant_texture(vec3 c) :color(c) {}
+	virtual vec3 value(double u, double v, const vec3& p)const {
+		return color;
+	}
+};
+
 class material {
 public:
 	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const = 0;
@@ -29,13 +47,13 @@ public:
 
 class lambertian :public material {
 public:
-	vec3 albedo;	// 反射率
+	texture* albedo;	// 反射率
 	
-	lambertian(const vec3& a) :albedo(a) {}
+	lambertian(texture* a) :albedo(a) {}
 	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const {
 		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
 		scattered = ray(rec.p, target - rec.p);
-		attenuation = albedo;
+		attenuation = albedo->value(0, 0, rec.p);
 		return true;
 	}
 };
@@ -98,3 +116,4 @@ public:
 		return true;
 	}
 };
+

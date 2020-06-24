@@ -61,14 +61,14 @@ int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
 hitable* random_scene() {
 	int n = 150;
 	hitable** list = new hitable * [n + 1];
-	list[0] = new sphere(vec3(0, 0, -1000), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+	list[0] = new sphere(vec3(0, 0, -1000), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
 	int cnt = 1;
 	for (int a = -6; a < 6; a++) {
 		for (int b = -6; b < 6; b++) {
 			double choose_mat = rand1();
 			vec3 center(a + 0.9 * rand1(), b + 0.9 * rand1(), 0.2);
 			if (choose_mat < 0.8) {
-				list[cnt++] = new sphere(center, 0.2, new lambertian(vec3(rand1(), rand1(), rand1())));
+				list[cnt++] = new sphere(center, 0.2, new lambertian(new constant_texture(vec3(rand1(), rand1(), rand1()))));
 			}
 			else if (choose_mat < 0.95) {
 				list[cnt++] = new sphere(
@@ -84,7 +84,7 @@ hitable* random_scene() {
 		}
 	}
 	list[cnt++] = new sphere(vec3(0, 0, 1), 1, new dielectric(1.5));
-	list[cnt++] = new sphere(vec3(-4, 0, 1), 1, new lambertian(vec3(0.4, 0.2, 0.1)));
+	list[cnt++] = new sphere(vec3(-4, 0, 1), 1, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
 	list[cnt++] = new sphere(vec3(4, 0, 1), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
 	return new hitable_list(list, cnt);
 
@@ -121,7 +121,7 @@ int main() {
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
 	hitable* list[2];
-	list[0] = new sphere(vec3(5, 0, 0), 5, new lambertian(vec3(0.1, 0.2, 0.5)));
+	list[0] = new sphere(vec3(5, 0, 0), 5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
 	list[1] = new sphere(vec3(-5, 0, 0), 5, new metal(vec3(0.6, 0.6, 0.6), 0.2));
 	hitable* world = new hitable_list(list, 2);
 
