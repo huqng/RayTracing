@@ -26,9 +26,10 @@ vec3 color(const ray& r, hitable* world, int depth) {
 		}
 	}
 	else {
-		vec3 unit_direction = unit_vector(r.direction());
-		double t = 0.5 * (unit_direction.y() + 1);
-		return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
+		return vec3(180, 200, 200);
+	//	vec3 unit_direction = unit_vector(r.direction());
+	//	double t = 0.5 * (unit_direction.y() + 1);
+	//	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
 	}
 }
 
@@ -110,8 +111,8 @@ int main() {
 	bi.biClrUsed = 0;
 	bi.biClrImportant = 0;
 
-	fstream of(FILENAME, ios::out | ios::binary);
-	if (!of.is_open()) {
+	fstream fout(FILENAME, ios::out | ios::binary);
+	if (!fout.is_open()) {
 		cout << "Cannot open file...";
 		return -1;
 	}
@@ -120,12 +121,19 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 
+	texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+	unsigned char* data = new unsigned char[1024 * 512 * 3];
+	ifstream fin("D:\\DATA\\earthmap.bmp", ios::in | ios::binary);
+	fin.seekg(54);
+	fin.read((char*)data, 1024 * 512 * 3);
+
+	texture* earthmap = new image_texture(data, 1024, 512);
 	hitable* list[2];
-	list[0] = new sphere(vec3(5, 0, 0), 5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
-	list[1] = new sphere(vec3(-5, 0, 0), 5, new metal(vec3(0.6, 0.6, 0.6), 0.2));
+	list[0] = new sphere(vec3(5, 0, 0), 5, new lambertian(earthmap));
+	list[1] = new sphere(vec3(-5, 0, 0), 5, new metal(vec3(0.6, 0.6, 0.6), 0));
 	hitable* world = new hitable_list(list, 2);
 
-	vec3 lookfrom(0, 10, 0);
+	vec3 lookfrom(10, 20, 20);
 	vec3 lookat(0, 0, 0);
 	vec3 vup = vec3(0, 0, 1);
 	double vfov = 40;
@@ -136,9 +144,9 @@ int main() {
 	
 	render(bm, cam, world);
 
-	of.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
-	of.write((const char*)&bi, sizeof(BITMAPINFOHEADER));
-	of.write((const char*)bm, HEIGHT * WIDTH * sizeof(RGBTRIPLE));
-	of.close();
+	fout.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
+	fout.write((const char*)&bi, sizeof(BITMAPINFOHEADER));
+	fout.write((const char*)bm, HEIGHT * WIDTH * sizeof(RGBTRIPLE));
+	fout.close();
 	return 0;
 }

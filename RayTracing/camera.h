@@ -6,8 +6,7 @@
 #define WIDTH 1280
 #define HEIGHT 800
 //¿¹¾â³Ý
-#define AA 50
-#define PI 3.14159265359
+#define AA 30
 
 class camera {
 public:

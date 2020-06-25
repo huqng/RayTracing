@@ -22,6 +22,7 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec)const
 			rec.mat_ptr = mat;
 			rec.t = t;		
 			rec.p = r.point_at_parameter(t);
+			get_sphere_uv((rec.p - center) / radius, rec.u, rec.v);
 			rec.normal = (rec.p - center) / radius;
 			return true;
 		}
@@ -30,6 +31,7 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec)const
 			rec.mat_ptr = mat;
 			rec.t = t;
 			rec.p = r.point_at_parameter(t);
+			get_sphere_uv((rec.p - center) / radius, rec.u, rec.v); 
 			rec.normal = (rec.p - center) / radius;
 			return true;
 		}
