@@ -12,7 +12,45 @@ using namespace std;
 
 // Í¼Æ¬ÎÄ¼þÎ»ÖÃ
 #define FILENAME "D:\\DATA\\0.bmp"
+#define NThread 64
 
+typedef struct para_t {
+	int index;
+	RGBTRIPLE(*bm)[WIDTH];
+	camera* cam;
+	hitable* world;
+}para_t;
+
+vec3 color(const ray& r, hitable* world, int depth);
+
+DWORD WINAPI render_i(LPVOID para) {
+	para_t s = *(para_t*)para;
+	hitable* world = s.world;
+	camera* cam = s.cam;
+
+	RGBTRIPLE(*bm)[WIDTH] = s.bm;
+	for (int i = HEIGHT * s.index / NThread; i < HEIGHT * (s.index + 1) / NThread; i++) {
+		for (int j = 0; j < WIDTH; j++) {
+			vec3 col(0, 0, 0);
+			for (int s = 0; s < AA; s++) {
+				double u = double(j + rand1()) / WIDTH;
+				double v = double(i + rand1()) / HEIGHT;
+				ray r = cam->get_ray(u, v);
+				col += color(r, world, 0);
+			}
+			col /= AA;
+
+			col /= 255.99;
+			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+			col *= 255.99;
+
+			bm[i][j].rgbtRed = col.r();
+			bm[i][j].rgbtGreen = col.g();
+			bm[i][j].rgbtBlue = col.b();
+		}
+	}
+	return 0;
+}
 
 vec3 color(const ray& r, hitable* world, int depth) {
 	hit_record rec;
@@ -28,35 +66,24 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	}
 	else {
 		return vec3(180, 200, 200);
-	//	vec3 unit_direction = unit_vector(r.direction());
-	//	double t = 0.5 * (unit_direction.y() + 1);
-	//	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
+		//	vec3 unit_direction = unit_vector(r.direction());
+		//	double t = 0.5 * (unit_direction.y() + 1);
+		//	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
 	}
 }
 
 int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
-	for (int i = 0; i < HEIGHT; i++) {
-		system("cls");
-		cout << 100 * i / HEIGHT << "%..." << endl;
-		for (int j = 0; j < WIDTH; j++) {
-			vec3 col(0, 0, 0);
-			for (int s = 0; s < AA; s++) {
-				double u = double(j + rand1()) / WIDTH;
-				double v = double(i + rand1()) / HEIGHT;
-				ray r = cam.get_ray(u, v);
-				col += color(r, world, 0);
-			}
-			col /= AA;
 
-			col /= 255.99;
-			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-			col *= 255.99;
-
-			bm[i][j].rgbtRed = col.r();
-			bm[i][j].rgbtGreen = col.g();
-			bm[i][j].rgbtBlue = col.b();
-		}
+	HANDLE hThread[NThread];
+	para_t paras[NThread];
+	for (int i = 0; i < NThread; i++) {
+		paras[i].index = i;
+		paras[i].cam = &cam;
+		paras[i].world = world;
+		paras[i].bm = bm;
+		hThread[i] = CreateThread(0, 0, render_i, &paras[i], 0, 0);
 	}
+	WaitForMultipleObjects(NThread, hThread, 1, INFINITE);
 	return 0;
 }
 
@@ -75,7 +102,7 @@ hitable* random_scene() {
 					list[i++] = new moving_sphere(center, center + vec3(0, 0.5 * rand1(), 0), 0, 1, 0.2, new lambertian(new constant_texture(vec3(rand1(), rand1(), rand1()))));
 				}
 				else if (choose_mat < 0.95) {
-					list[i++] = new sphere(center, 0.2, new metal(vec3(0.5 * (1 + rand1()),  0.5 * (1 + rand1()), 0.5 * (1 + rand1())), 0.5 * rand1()));
+					list[i++] = new sphere(center, 0.2, new metal(vec3(0.5 * (1 + rand1()), 0.5 * (1 + rand1()), 0.5 * (1 + rand1())), 0.5 * rand1()));
 				}
 				else {
 					list[i++] = new sphere(center, 0.2, new dielectric(1.5));
@@ -118,7 +145,7 @@ int main() {
 	RGBTRIPLE(*bm)[WIDTH];
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
-	
+
 	vec3 lookfrom(13, 2, 3);
 	vec3 lookat(0, 0, 0);
 	vec3 vup = vec3(0, 1, 0);
@@ -127,7 +154,7 @@ int main() {
 	double dist_to_focus = 10;
 	double aperture = 0;
 	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, 0, 1);
-	
+
 	render(bm, cam, random_scene());
 
 	fout.write((const char*)&bf, sizeof(BITMAPFILEHEADER));

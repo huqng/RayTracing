@@ -3,10 +3,10 @@
 #include"func.h"
 
 // Í¼Æ¬µÄ³ß´ç
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 1280
+#define HEIGHT 800
 //¿¹¾â³Ý
-#define AA 4
+#define AA 50
 
 class camera {
 public:
