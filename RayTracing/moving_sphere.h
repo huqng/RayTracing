@@ -38,6 +38,12 @@ public:
 		}
 		return false;
 	}
+	virtual bool bounding_box(double t0, double t1, aabb& box)const {
+		aabb box0 = aabb(center0 - vec3(radius, radius, radius), center0 + vec3(radius, radius, radius));
+		aabb box1 = aabb(center1 - vec3(radius, radius, radius), center1 + vec3(radius, radius, radius));
+		box = surrounding_box(box0, box1);
+		return true;
+	}
 };
 
 vec3 moving_sphere::center(double time)const {

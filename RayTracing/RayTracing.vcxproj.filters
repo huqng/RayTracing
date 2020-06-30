@@ -44,5 +44,20 @@
     <ClInclude Include="moving_sphere.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="aabb.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="material.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="texture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="hit_record.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="bvh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

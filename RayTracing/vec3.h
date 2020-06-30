@@ -7,6 +7,7 @@ class vec3 {
 	// 三维向量
 public:
 	double e[3];	// 分量
+
 	vec3() {}
 	vec3(double e0, double e1, double e2) { e[0] = e0; e[1] = e1; e[2] = e2; }
 	inline double x() const { return e[0]; }

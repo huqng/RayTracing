@@ -8,6 +8,8 @@
 //¿¹¾â³Ý
 #define AA 50
 
+class camera;
+
 class camera {
 public:
 	vec3 origin, lower_left_corner, horizontal, vertical;

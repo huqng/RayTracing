@@ -1,18 +1,25 @@
 //#include"ray.h"
+#include"func.h"
 #include"camera.h"
+
 #include"sphere.h"
 #include"moving_sphere.h"
 #include"hitablelist.h"
-#include"func.h"
+#include"bvh.h"
+
+#include"material.h"
+#include"texture.h"
+
 #include<iostream>
 #include<fstream>
-#include<random>
+#include<ctime>
 #include<Windows.h>
 using namespace std;
 
 // 图片文件位置
 #define FILENAME "D:\\DATA\\0.bmp"
-#define NThread 64
+// 线程数
+#define NThread 24
 
 typedef struct para_t {
 	int index;
@@ -21,7 +28,76 @@ typedef struct para_t {
 	hitable* world;
 }para_t;
 
+
+
 vec3 color(const ray& r, hitable* world, int depth);
+int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world);
+DWORD WINAPI render_i(LPVOID para);
+
+hitable* random_scene();
+hitable* random_scene_1();
+hitable* simple_scene();
+
+int main() {
+	if ((unsigned int)NThread > 64) {
+		cerr << "Too many threads..." << endl;
+		return -1;
+	}
+	//用于计时
+	time_t time_start = time(0);
+	
+	// 输出文件的缓冲区
+	RGBTRIPLE(*bm)[WIDTH];
+	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
+	bm = (RGBTRIPLE(*)[WIDTH])tmp;
+	//camera设置
+	vec3 lookfrom(8, 8, 8);					// 视线起点
+	vec3 lookat(0, 0, 0);						// 视线终点
+	vec3 vup = vec3(0, 1, 0);					// 图片up方向
+	double vfov = 20;							// Field of view
+	double aspect = (double)WIDTH / HEIGHT;		// 长宽比
+	double dist_to_focus = 10;					// 焦距 // 用于失焦模糊
+	double aperture = 0;						// 光圈 //
+	double t0 = 0;								// 起始时间 // 用于动态模糊
+	double t1 = 1;								// 终止时间
+	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, t0, t1);
+	// 待绘制的场景
+	hitable* scene = random_scene();
+	// 开始绘制
+	render(bm, cam, scene);
+	// 初始化BMP文件头
+	BITMAPFILEHEADER bf;
+	BITMAPINFOHEADER bi;
+	bf.bfType = 19778;
+	bf.bfSize = WIDTH * HEIGHT * 3 + 54;
+	bf.bfReserved1 = 0;
+	bf.bfReserved2 = 0;
+	bf.bfOffBits = 54;
+	bi.biWidth = WIDTH;
+	bi.biHeight = HEIGHT;
+	bi.biSize = 40;
+	bi.biPlanes = 1;
+	bi.biBitCount = 24;
+	bi.biCompression = BI_RGB;
+	bi.biSizeImage = 0;
+	bi.biXPelsPerMeter = 0;
+	bi.biYPelsPerMeter = 0;
+	bi.biClrUsed = 0;
+	bi.biClrImportant = 0;
+	// 打开输出文件
+	fstream fout(FILENAME, ios::out | ios::binary);
+	if (!fout.is_open()) {
+		cout << "Cannot open file...";
+		return -2;
+	}
+	// 输出到文件
+	fout.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
+	fout.write((const char*)&bi, sizeof(BITMAPINFOHEADER));
+	fout.write((const char*)bm, HEIGHT * WIDTH * sizeof(RGBTRIPLE));
+	fout.close();
+	cout << time(0) - time_start << "s" << endl;
+	return 0;
+}
 
 DWORD WINAPI render_i(LPVOID para) {
 	para_t s = *(para_t*)para;
@@ -40,7 +116,6 @@ DWORD WINAPI render_i(LPVOID para) {
 			}
 			col /= AA;
 
-			col /= 255.99;
 			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 			col *= 255.99;
 
@@ -65,10 +140,7 @@ vec3 color(const ray& r, hitable* world, int depth) {
 		}
 	}
 	else {
-		return vec3(180, 200, 200);
-		//	vec3 unit_direction = unit_vector(r.direction());
-		//	double t = 0.5 * (unit_direction.y() + 1);
-		//	return (1 - t) * vec3(255.99, 255.99, 255.99) + t * vec3(100, 150, 255.99);
+		return vec3(0.8, 0.8, 0.8);
 	}
 }
 
@@ -113,53 +185,46 @@ hitable* random_scene() {
 	list[i++] = new sphere(vec3(0, 1, 0), 1, new dielectric(1.5));
 	list[i++] = new sphere(vec3(-4, 1, 0), 1, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
 	list[i++] = new sphere(vec3(4, 1, 0), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
+//	return new bvh_node(list, i, 0, 1);
 	return new hitable_list(list, i);
 }
 
-int main() {
-	BITMAPFILEHEADER bf;
-	BITMAPINFOHEADER bi;
-	bf.bfType = 19778;
-	bf.bfSize = WIDTH * HEIGHT * 3 + 54;
-	bf.bfReserved1 = 0;
-	bf.bfReserved2 = 0;
-	bf.bfOffBits = 54;
-	bi.biWidth = WIDTH;
-	bi.biHeight = HEIGHT;
-	bi.biSize = 40;
-	bi.biPlanes = 1;
-	bi.biBitCount = 24;
-	bi.biCompression = BI_RGB;
-	bi.biSizeImage = 0;
-	bi.biXPelsPerMeter = 0;
-	bi.biYPelsPerMeter = 0;
-	bi.biClrUsed = 0;
-	bi.biClrImportant = 0;
-
-	fstream fout(FILENAME, ios::out | ios::binary);
-	if (!fout.is_open()) {
-		cout << "Cannot open file...";
-		return -1;
+hitable* random_scene_1() {
+	texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+	int n = 110;
+	hitable** list = new hitable * [n];
+	list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(checker));
+	int i = 1;
+	for (int a = -10; a < 10; a += 2) {
+		for (int b = -10; b < 10; b += 2) {
+			double choose_mat = rand1();
+			vec3 center(a + 1.6 * rand1(), 0.4, b + 1.6 * rand1());
+			if ((center - vec3(4, 0.4, 0)).squared_length() > 0.64) {
+				if (choose_mat < 0.2) {
+					list[i++] = new sphere(center, 0.4, new lambertian(new constant_texture(vec3(rand1(), rand1(), rand1()))));
+				}
+				else if (choose_mat < 0.9) {
+					list[i++] = new sphere(center, 0.4, new metal(vec3(0.5 * (1 + rand1()), 0.5 * (1 + rand1()), 0.5 * (1 + rand1())), 0.5 * rand1()));
+				}
+				else {
+					list[i++] = new sphere(center, 0.4, new dielectric(1.5));
+				}
+			}
+		}
 	}
+	list[i++] = new sphere(vec3(0, 1, 0), 1, new dielectric(1.5));
+	list[i++] = new sphere(vec3(-4, 1, 0), 1, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
+	list[i++] = new sphere(vec3(4, 1, 0), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
+	return new hitable_list(list, i);
+}
 
-	RGBTRIPLE(*bm)[WIDTH];
-	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
-	bm = (RGBTRIPLE(*)[WIDTH])tmp;
-
-	vec3 lookfrom(13, 2, 3);
-	vec3 lookat(0, 0, 0);
-	vec3 vup = vec3(0, 1, 0);
-	double vfov = 20;
-	double aspect = (double)WIDTH / HEIGHT;
-	double dist_to_focus = 10;
-	double aperture = 0;
-	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, 0, 1);
-
-	render(bm, cam, random_scene());
-
-	fout.write((const char*)&bf, sizeof(BITMAPFILEHEADER));
-	fout.write((const char*)&bi, sizeof(BITMAPINFOHEADER));
-	fout.write((const char*)bm, HEIGHT * WIDTH * sizeof(RGBTRIPLE));
-	fout.close();
-	return 0;
+hitable* simple_scene() {
+	hitable** list = new hitable * [6];
+	list[0] = new sphere(vec3(0, 0, 1), 1, new metal(vec3(0.5, 0.6, 0.7), 0.1));
+	list[1] = new sphere(vec3(1.5, 0, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.8, 0.7, 0.2))));
+	list[2] = new sphere(vec3(0, 1.5, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.2, 0.3, 0.8))));
+	list[3] = new sphere(vec3(0, -1.5, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.4, 0.1, 0.2))));
+	list[4] = new sphere(vec3(-1.5, 0, 0.4), 0.4, new dielectric(1.4));
+	list[5] = new sphere(vec3(0, 0, -10000), 10000, new lambertian(new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
+	return new hitable_list(list, 6);
 }
