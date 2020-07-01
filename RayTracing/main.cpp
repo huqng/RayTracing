@@ -1,4 +1,3 @@
-//#include"ray.h"
 #include"func.h"
 #include"camera.h"
 
@@ -6,6 +5,7 @@
 #include"moving_sphere.h"
 #include"hitablelist.h"
 #include"bvh.h"
+#include"rectangle.h"
 
 #include"material.h"
 #include"texture.h"
@@ -33,27 +33,26 @@ typedef struct para_t {
 vec3 color(const ray& r, hitable* world, int depth);
 int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world);
 DWORD WINAPI render_i(LPVOID para);
-
+// some scenes
 hitable* random_scene();
-hitable* random_scene_1();
-hitable* simple_scene();
+hitable* test_scene();
 
 int main() {
+	//用于计时
+	time_t time_start = time(0);
 	if ((unsigned int)NThread > 64) {
 		cerr << "Too many threads..." << endl;
 		return -1;
 	}
-	//用于计时
-	time_t time_start = time(0);
 	
 	// 输出文件的缓冲区
 	RGBTRIPLE(*bm)[WIDTH];
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 	//camera设置
-	vec3 lookfrom(8, 8, 8);					// 视线起点
-	vec3 lookat(0, 0, 0);						// 视线终点
-	vec3 vup = vec3(0, 1, 0);					// 图片up方向
+	vec3 lookfrom(15, 5, 5);					// 视线起点
+	vec3 lookat(0, 3, 1.5);						// 视线终点
+	vec3 vup = vec3(0, 0, 1);					// 图片up方向
 	double vfov = 20;							// Field of view
 	double aspect = (double)WIDTH / HEIGHT;		// 长宽比
 	double dist_to_focus = 10;					// 焦距 // 用于失焦模糊
@@ -62,7 +61,7 @@ int main() {
 	double t1 = 1;								// 终止时间
 	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, t0, t1);
 	// 待绘制的场景
-	hitable* scene = random_scene();
+	hitable* scene = test_scene();
 	// 开始绘制
 	render(bm, cam, scene);
 	// 初始化BMP文件头
@@ -119,9 +118,9 @@ DWORD WINAPI render_i(LPVOID para) {
 			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 			col *= 255.99;
 
-			bm[i][j].rgbtRed = col.r();
-			bm[i][j].rgbtGreen = col.g();
-			bm[i][j].rgbtBlue = col.b();
+			bm[i][j].rgbtRed = col.r() > 255 ? 255 : col.r();
+			bm[i][j].rgbtGreen = col.g() > 255 ? 255 : col.g();
+			bm[i][j].rgbtBlue = col.b() > 255 ? 255 : col.b();
 		}
 	}
 	return 0;
@@ -132,15 +131,16 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	if (world->hit(r, 0.001, MAXINT, rec)) {
 		ray scattered;
 		vec3 attenuation;
+		vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
 		if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
 			return attenuation * color(scattered, world, depth + 1);
 		}
 		else {
-			return vec3(0, 0, 0);
+			return emitted;
 		}
 	}
 	else {
-		return vec3(0.8, 0.8, 0.8);
+		return vec3(0, 0, 0);
 	}
 }
 
@@ -185,46 +185,18 @@ hitable* random_scene() {
 	list[i++] = new sphere(vec3(0, 1, 0), 1, new dielectric(1.5));
 	list[i++] = new sphere(vec3(-4, 1, 0), 1, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
 	list[i++] = new sphere(vec3(4, 1, 0), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
-//	return new bvh_node(list, i, 0, 1);
+	return new bvh_node(list, i, 0, 1);
 	return new hitable_list(list, i);
 }
 
-hitable* random_scene_1() {
+hitable* test_scene() {
 	texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-	int n = 110;
-	hitable** list = new hitable * [n];
-	list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(checker));
-	int i = 1;
-	for (int a = -10; a < 10; a += 2) {
-		for (int b = -10; b < 10; b += 2) {
-			double choose_mat = rand1();
-			vec3 center(a + 1.6 * rand1(), 0.4, b + 1.6 * rand1());
-			if ((center - vec3(4, 0.4, 0)).squared_length() > 0.64) {
-				if (choose_mat < 0.2) {
-					list[i++] = new sphere(center, 0.4, new lambertian(new constant_texture(vec3(rand1(), rand1(), rand1()))));
-				}
-				else if (choose_mat < 0.9) {
-					list[i++] = new sphere(center, 0.4, new metal(vec3(0.5 * (1 + rand1()), 0.5 * (1 + rand1()), 0.5 * (1 + rand1())), 0.5 * rand1()));
-				}
-				else {
-					list[i++] = new sphere(center, 0.4, new dielectric(1.5));
-				}
-			}
-		}
-	}
-	list[i++] = new sphere(vec3(0, 1, 0), 1, new dielectric(1.5));
-	list[i++] = new sphere(vec3(-4, 1, 0), 1, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
-	list[i++] = new sphere(vec3(4, 1, 0), 1, new metal(vec3(0.7, 0.6, 0.5), 0));
-	return new hitable_list(list, i);
-}
-
-hitable* simple_scene() {
-	hitable** list = new hitable * [6];
-	list[0] = new sphere(vec3(0, 0, 1), 1, new metal(vec3(0.5, 0.6, 0.7), 0.1));
-	list[1] = new sphere(vec3(1.5, 0, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.8, 0.7, 0.2))));
-	list[2] = new sphere(vec3(0, 1.5, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.2, 0.3, 0.8))));
-	list[3] = new sphere(vec3(0, -1.5, 0.4), 0.4, new lambertian(new constant_texture(vec3(0.4, 0.1, 0.2))));
-	list[4] = new sphere(vec3(-1.5, 0, 0.4), 0.4, new dielectric(1.4));
-	list[5] = new sphere(vec3(0, 0, -10000), 10000, new lambertian(new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
-	return new hitable_list(list, 6);
+	texture* pertext = new noise_texture(4);
+	hitable** list = new hitable * [4];
+	// if z == 0, then there would be something wrong in checker_texture
+	list[0] = new xy_rect(-100, 100, -100, 100, 0.1, new lambertian(checker));
+	list[1] = new sphere(vec3(0, 0, 2.1), 2, new lambertian(pertext));
+	list[2] = new sphere(vec3(0, 5, 1.1), 1, new lambertian(new constant_texture(vec3(0.9, 0.8, 0.9))));
+	list[3] = new xz_rect(-1, 1, 1, 3, 3, new diffuse_light(new constant_texture(vec3(4, 4, 4))));
+	return new bvh_node(list, 4, 0, 0);
 }

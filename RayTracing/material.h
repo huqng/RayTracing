@@ -8,10 +8,14 @@ class material;
 class lambertian;
 class metal;
 class dielectric;
+class diffuse_light;
 
 class material {
 public:
 	virtual bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered)const = 0;
+	virtual vec3 emitted(double u, double v, const vec3& p)const {
+		return vec3(0, 0, 0);
+	}
 };
 
 class lambertian :public material {
@@ -87,3 +91,11 @@ public:
 	}
 };
 
+class diffuse_light :public material {
+public:
+	texture* emit;
+
+	diffuse_light(texture* a) :emit(a) {}
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const { return false; }
+	virtual vec3 emitted(double u, double v, const vec3& p)const { return emit->value(u, v, p); }
+};

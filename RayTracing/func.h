@@ -1,6 +1,7 @@
 #pragma once
 #include"vec3.h"
 #include<cmath>
+#include<ctime>
 
 #define PI 3.14159265359
 

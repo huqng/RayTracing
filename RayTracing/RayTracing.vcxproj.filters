@@ -59,5 +59,11 @@
     <ClInclude Include="bvh.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="perlin.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="rectangle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

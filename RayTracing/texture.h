@@ -1,10 +1,11 @@
 #pragma once
-#include"vec3.h"
+#include"perlin.h"
 
 class texture;
 class constant_texture;
 class checker_texture;
 class image_texture;
+class noise_texture;
 
 class texture {
 public:
@@ -63,3 +64,14 @@ public:
 	}
 };
 
+class noise_texture : public texture {
+public:
+	perlin noise;
+	double scale;
+
+	noise_texture() {}
+	noise_texture(double sc) :scale(sc) {}
+	virtual vec3 value(double u, double v, const vec3& p)const {
+		return vec3(1, 1, 1) * 0.5 * (1 + sin(scale * p.y() + 10 * noise.turb(p)));
+	}
+};

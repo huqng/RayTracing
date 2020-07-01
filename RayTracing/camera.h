@@ -2,11 +2,24 @@
 #include"ray.h"
 #include"func.h"
 
+#define LQ
+#ifdef HQ
 // Í¼Æ¬µÄ³ß´ç
-#define WIDTH 1280
-#define HEIGHT 800
+#define WIDTH 1920
+#define HEIGHT 1080
 //¿¹¾â³Ý
+#define AA 100
+#endif
+#ifdef MQ
+#define WIDTH 1280
+#define HEIGHT 720
 #define AA 50
+#endif
+#ifdef LQ
+#define WIDTH 800
+#define HEIGHT 600
+#define AA 10
+#endif
 
 class camera;
 
