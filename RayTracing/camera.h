@@ -18,7 +18,7 @@
 #ifdef LQ
 #define WIDTH 800
 #define HEIGHT 600
-#define AA 10
+#define AA 100
 #endif
 
 class camera;

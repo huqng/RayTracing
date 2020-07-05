@@ -36,6 +36,7 @@ DWORD WINAPI render_i(LPVOID para);
 // some scenes
 hitable* random_scene();
 hitable* test_scene();
+hitable* cornell_box();
 
 int main() {
 	//用于计时
@@ -50,10 +51,10 @@ int main() {
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
 	//camera设置
-	vec3 lookfrom(15, 5, 5);					// 视线起点
-	vec3 lookat(0, 3, 1.5);						// 视线终点
-	vec3 vup = vec3(0, 0, 1);					// 图片up方向
-	double vfov = 20;							// Field of view
+	vec3 lookfrom(278, 278, -800);					// 视线起点
+	vec3 lookat(278, 278, 0);						// 视线终点
+	vec3 vup = vec3(0, 1, 0);					// 图片up方向
+	double vfov = 40;							// Field of view
 	double aspect = (double)WIDTH / HEIGHT;		// 长宽比
 	double dist_to_focus = 10;					// 焦距 // 用于失焦模糊
 	double aperture = 0;						// 光圈 //
@@ -61,7 +62,7 @@ int main() {
 	double t1 = 1;								// 终止时间
 	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, t0, t1);
 	// 待绘制的场景
-	hitable* scene = test_scene();
+	hitable* scene = cornell_box();
 	// 开始绘制
 	render(bm, cam, scene);
 	// 初始化BMP文件头
@@ -199,4 +200,22 @@ hitable* test_scene() {
 	list[2] = new sphere(vec3(0, 5, 1.1), 1, new lambertian(new constant_texture(vec3(0.9, 0.8, 0.9))));
 	list[3] = new xz_rect(-1, 1, 1, 3, 3, new diffuse_light(new constant_texture(vec3(4, 4, 4))));
 	return new bvh_node(list, 4, 0, 0);
+}
+
+hitable* cornell_box() {
+	hitable** list = new hitable * [6];
+	int i = 0;
+	material* red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+	material* white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+	material* green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+	material* light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+	list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
+	list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
+	list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
+	list[i++] = new flip_normals(list[i++] = new xz_rect(0, 555, 0, 555, 555, white));
+	list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
+	list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
+
+	return new hitable_list(list, i);
+
 }

@@ -78,7 +78,7 @@ public:
 	yz_rect(double _y0, double _y1, double _z0, double _z1, double _k, material* mat) :y0(_y0), y1(_y1), z0(_z0), z1(_z1), k(_k), mp(mat) {}
 
 	virtual bool hit(const ray& r, double t0, double t1, hit_record& rec)const;
-	virtual bool bounding_boy(double t0, double t1, aabb& boy)const {
+	virtual bool bounding_box(double t0, double t1, aabb& boy)const {
 		boy = aabb(vec3(k - 0.0001, y0, z0), vec3(k + 0.0001, y1, z1));
 		return true;
 	}
