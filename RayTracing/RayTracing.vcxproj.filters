@@ -68,5 +68,11 @@
     <ClInclude Include="box.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="translate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="rotate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
