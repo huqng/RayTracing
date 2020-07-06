@@ -4,7 +4,7 @@
 
 #define WIDTH 512
 #define HEIGHT 512
-#define AA 200
+#define AA 20
 
 class camera;
 

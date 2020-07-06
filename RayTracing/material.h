@@ -9,6 +9,7 @@ class lambertian;
 class metal;
 class dielectric;
 class diffuse_light;
+class isotrophic;
 
 class material {
 public:
@@ -98,4 +99,16 @@ public:
 	diffuse_light(texture* a) :emit(a) {}
 	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const { return false; }
 	virtual vec3 emitted(double u, double v, const vec3& p)const { return emit->value(u, v, p); }
+};
+
+class isotrophic :public material {
+public:
+	texture* albedo;
+
+	isotrophic(texture* a) :albedo(a) {}
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const {
+		scattered = ray(rec.p, random_in_unit_sphere());
+		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		return true;
+	}
 };

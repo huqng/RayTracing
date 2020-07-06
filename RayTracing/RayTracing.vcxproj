@@ -159,6 +159,7 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="translate.h" />
     <ClInclude Include="vec3.h" />
+    <ClInclude Include="volumes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
