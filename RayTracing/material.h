@@ -13,7 +13,10 @@ class isotrophic;
 
 class material {
 public:
-	virtual bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered)const = 0;
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const = 0;
+	virtual double scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered)const {
+		return false;
+	}
 	virtual vec3 emitted(double u, double v, const vec3& p)const {
 		return vec3(0, 0, 0);
 	}
@@ -24,10 +27,23 @@ public:
 	texture* albedo;	// ∑¥…‰¬ 
 
 	lambertian(texture* a) :albedo(a) {}
-	virtual bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered)const {
+	double scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered)const {
+		double cosine = dot(rec.normal, unit_vector(scattered.direction()));
+		if (cosine < 0)cosine = 0;
+		return cosine / M_PI;;
+	}
+	bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const {
 		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-		scattered = ray(rec.p, target - rec.p, r_in.time());
+		scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
 		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		pdf = dot(rec.normal, scattered.direction()) / M_PI;
+		/*vec3 direction;
+		do {
+			direction = random_in_unit_sphere();
+		} while (dot(direction, rec.normal) < 0);
+		scattered = ray(rec.p, unit_vector(direction), r_in.time());
+		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		pdf = 0.5 / M_PI;*/
 		return true;
 	}
 };
@@ -43,7 +59,7 @@ public:
 		else
 			fuzz = 1;
 	}
-	virtual bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered)const {
+	bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const {
 		vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
 		scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
 		attenuation = albedo;
@@ -56,7 +72,7 @@ class dielectric :public material {
 public:
 	double ref_idx;
 	dielectric(double ri) :ref_idx(ri) {}
-	virtual bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered)const {
+	bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const {
 		vec3 outward_normal;
 		vec3 reflected = reflect(r_in.direction(), rec.normal);
 		double ni_over_nt;
@@ -97,8 +113,8 @@ public:
 	texture* emit;
 
 	diffuse_light(texture* a) :emit(a) {}
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const { return false; }
-	virtual vec3 emitted(double u, double v, const vec3& p)const { return emit->value(u, v, p); }
+	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const { return false; }
+	vec3 emitted(double u, double v, const vec3& p)const { return emit->value(u, v, p); }
 };
 
 class isotrophic :public material {
@@ -106,7 +122,7 @@ public:
 	texture* albedo;
 
 	isotrophic(texture* a) :albedo(a) {}
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered)const {
+	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const {
 		scattered = ray(rec.p, random_in_unit_sphere());
 		attenuation = albedo->value(rec.u, rec.v, rec.p);
 		return true;

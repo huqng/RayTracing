@@ -21,7 +21,7 @@ public:
 };
 
 rotate_y::rotate_y(hitable* p, double angle) :ptr(p) {
-	double radians = (PI / 180) * angle;
+	double radians = (M_PI / 180) * angle;
 	sin_theta = sin(radians);
 	cos_theta = cos(radians);
 	hasbox = ptr->bounding_box(0, 1, bbox);

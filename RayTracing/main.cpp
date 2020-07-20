@@ -22,7 +22,7 @@ using namespace std;
 // 图片文件位置
 #define FILENAME "D:\\DATA\\0.bmp"
 // 线程数
-#define NThread 24
+#define NThread 8
 
 typedef struct para_t {
 	int index;
@@ -37,35 +37,26 @@ vec3 color(const ray& r, hitable* world, int depth);
 int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world);
 DWORD WINAPI render_i(LPVOID para);
 // some scenes
-hitable* test_scene();
-hitable* cornell_box();
+void cornell_box(hitable** scene, camera** cam, double aspect);
 
 int main() {
 	if ((unsigned int)NThread > 64) {
 		cerr << "Too many threads..." << endl;
 		return -1;
 	}
-	
 	// 输出文件的缓冲区
 	RGBTRIPLE(*bm)[WIDTH];
 	RGBTRIPLE* tmp = new RGBTRIPLE[HEIGHT * WIDTH * sizeof(RGBTRIPLE)];
 	bm = (RGBTRIPLE(*)[WIDTH])tmp;
-	//camera设置
-	vec3 lookfrom(278, 278, -800);					// 视线起点
-	vec3 lookat(278, 278, 0);						// 视线终点
-	vec3 vup = vec3(0, 1, 0);					// 图片up方向
-	double vfov = 40;							// Field of view
-	double aspect = (double)WIDTH / HEIGHT;		// 长宽比
-	double dist_to_focus = 10;					// 焦距 // 用于失焦模糊
-	double aperture = 0;						// 光圈 //
-	double t0 = 0;								// 起始时间 // 用于动态模糊
-	double t1 = 1;								// 终止时间
-	camera cam(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, t0, t1);
-	// 待绘制的场景
-	hitable* scene = cornell_box();
+	
+	// 场景和摄像机
+	hitable* scene;
+	camera* cam;
+	cornell_box(&scene, &cam, (double)(WIDTH / HEIGHT));
+		
 	// 开始绘制
-	render(bm, cam, scene);
-	// 初始化BMP文件头
+	render(bm, *cam, scene);
+	// BMP文件头
 	BITMAPFILEHEADER bf;
 	BITMAPINFOHEADER bi;
 	bf.bfType = 19778;
@@ -130,10 +121,12 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	hit_record rec;
 	if (world->hit(r, 0.001, MAXINT, rec)) {
 		ray scattered;
-		vec3 attenuation;
+		//vec3 attenuation;
 		vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-		if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-			return attenuation * color(scattered, world, depth + 1);
+		double pdf;
+		vec3 albedo;
+		if (depth < 50 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf)) {
+			return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1) / pdf;
 		}
 		else {
 			return emitted;
@@ -163,37 +156,35 @@ int render(RGBTRIPLE(*bm)[WIDTH], camera& cam, hitable* world) {
 }
 
 
-hitable* test_scene() {
-	texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-	texture* pertext = new noise_texture(4);
-	hitable** list = new hitable * [4];
-	// if z == 0, then there would be something wrong in checker_texture(because of cos(0))
-	list[0] = new xy_rect(-100, 100, -100, 100, 0.1, new lambertian(checker));
-	list[1] = new sphere(vec3(0, 0, 2.1), 2, new lambertian(pertext));
-	list[2] = new sphere(vec3(0, 5, 1.1), 1, new lambertian(new constant_texture(vec3(0.9, 0.8, 0.9))));
-	list[3] = new xz_rect(-1, 1, 1, 3, 3, new diffuse_light(new constant_texture(vec3(4, 4, 4))));
-	return new bvh_node(list, 4, 0, 0);
-}
 
-hitable* cornell_box() {
-	hitable** list = new hitable * [8];
+void cornell_box(hitable** scene, camera** cam, double aspect) {
+	// set scene
 	int i = 0;
+	hitable** list = new hitable * [8];
 	material* red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
 	material* white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
 	material* green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
-	material* light = new diffuse_light(new constant_texture(vec3(7, 7, 7)));
+	material* light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
 	list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
 	list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
-	list[i++] = new xz_rect(113, 443, 127, 432, 554, light);
+	list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
 	list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
 	list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
 	list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
-	hitable* b1 = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
-	hitable* b2 = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white), 15), vec3(265, 0, 295));
-	list[i++] = new constant_medium(b1, 0.01, new constant_texture(vec3(1, 1, 1)));
-	list[i++] = new constant_medium(b2, 0.01, new constant_texture(vec3(0, 0, 0)));
-
-//	return new hitable_list(list, i);
-	return new bvh_node(list, i, 0, 1);
-
+	list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
+	list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white), 15), vec3(265, 0, 295));
+	
+	
+	*scene = new hitable_list(list, i);
+	// set camera
+	vec3 lookfrom(278, 278, -800);					// 视线起点
+	vec3 lookat(278, 278, 0);						// 视线终点
+	vec3 vup = vec3(0, 1, 0);					// 图片up方向
+	double vfov = 40;							// Field of view
+//	double aspect = (double)WIDTH / HEIGHT;		// 长宽比
+	double dist_to_focus = 10;					// 焦距 // 用于失焦模糊
+	double aperture = 0;						// 光圈 //
+	double t0 = 0;								// 起始时间 // 用于动态模糊
+	double t1 = 1;								// 终止时间
+	*cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus, t0, t1);
 }

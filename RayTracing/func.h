@@ -3,7 +3,9 @@
 #include<cmath>
 #include<ctime>
 
-#define PI 3.14159265359
+#ifndef M_PI
+#define M_PI 3.14159265359
+#endif
 
 double rand1() {
 	return (double)rand() / (RAND_MAX + 1);
@@ -50,6 +52,6 @@ double schlick(double cosine, double ref_idx) {
 void get_sphere_uv(const vec3& p, double& u, double& v) {
 	double phi = -atan2(p.y(), p.x());
 	double theta = asin(p.z());
-	u = 1 - (phi + PI) / (2 * PI);
-	v = (theta + PI / 2) / PI;
+	u = 1 - (phi + M_PI) / (2 * M_PI);
+	v = (theta + M_PI / 2) / M_PI;
 }

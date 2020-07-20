@@ -4,7 +4,7 @@
 
 #define WIDTH 512
 #define HEIGHT 512
-#define AA 20
+#define AA 100
 
 class camera;
 
@@ -22,7 +22,7 @@ public:
 		time0 = t0;
 		time1 = t1;
 		lens_radius = aperture / 2;
-		double theta = vfov * PI / 180;
+		double theta = vfov * M_PI / 180;
 		double half_height = tan(theta / 2);
 		double half_width = aspect * half_height;
 		origin = lookfrom;
