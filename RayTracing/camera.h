@@ -2,9 +2,9 @@
 #include"ray.h"
 #include"func.h"
 
-#define WIDTH 512
-#define HEIGHT 512
-#define AA 1000
+#define WIDTH 500
+#define HEIGHT 500
+#define AA 10
 
 class camera;
 
