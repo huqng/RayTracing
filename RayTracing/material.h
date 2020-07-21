@@ -3,6 +3,7 @@
 #include"hit_record.h"
 #include"texture.h"
 #include"ray.h"
+#include"onb.h"
 
 class material;
 class lambertian;
@@ -33,10 +34,20 @@ public:
 		return cosine / M_PI;;
 	}
 	bool scatter(const ray& r_in,  const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf)const {
-		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-		scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
+		onb uvw;
+		uvw.build_from_w(rec.normal);
+		vec3 direction = uvw.local(random_cosine_direction());
+		scattered = ray(rec.p, direction, r_in.time());
+		//scattered = ray(rec.p, unit_vector(direction), r_in.time());
 		attenuation = albedo->value(rec.u, rec.v, rec.p);
-		pdf = dot(rec.normal, scattered.direction()) / M_PI;
+		pdf = dot(uvw.w(), scattered.direction()) / M_PI;
+
+		
+		
+		//vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+		//scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
+		//attenuation = albedo->value(rec.u, rec.v, rec.p);
+		//pdf = dot(rec.normal, scattered.direction()) / M_PI;
 		/*vec3 direction;
 		do {
 			direction = random_in_unit_sphere();
